@@ -24,4 +24,10 @@ repositories {
     }
 }
 
+android {
+    lintOptions {
+        abortOnError false
+    }
+}
+
 apply from: 'build.release.gradle'
