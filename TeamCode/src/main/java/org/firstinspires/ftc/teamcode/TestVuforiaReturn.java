@@ -14,6 +14,9 @@ public class TestVuforiaReturn extends LinearOpMode {
 
         int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
         vuforia = new SquareRootsVuforia(cameraMonitorViewId);
+        int tfodMonitorViewId = hardwareMap.appContext.getResources().getIdentifier(
+                "tfodMonitorViewId", "id", hardwareMap.appContext.getPackageName());
+        vuforia.InitTfod(tfodMonitorViewId);
         waitForStart();
         while (opModeIsActive()) {
             double[] pos = vuforia.getPos();
