@@ -10,8 +10,9 @@ public class SquareRootsAutonomousBlueGold extends SquareRootsAutonomousBase {
         waitForStart();
         while(opModeIsActive())
         {
-            //DoLanding();
-            //ClearLander();
+            DoLanding();
+            ClearLander();
+            findTheGold();
             HitGoldBlock();
         }
     }
