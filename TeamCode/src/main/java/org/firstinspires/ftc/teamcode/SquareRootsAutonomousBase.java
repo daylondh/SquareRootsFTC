@@ -37,6 +37,8 @@ public abstract class SquareRootsAutonomousBase extends LinearOpMode {
     private final int TARGET_WIDTH = 90;
     public List<PixySignature> sigs;
     private boolean goldfound;
+    private boolean _readyToHit;
+    double time = System.currentTimeMillis();
 
 
     protected void Init() {
@@ -62,6 +64,8 @@ public abstract class SquareRootsAutonomousBase extends LinearOpMode {
 
         int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
         vuforia = new SquareRootsVuforia(cameraMonitorViewId);
+        int tfodMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("tfodMonitorViewId", "id", hardwareMap.appContext.getPackageName());
+        vuforia.InitTfod(tfodMonitorViewId);
 
 
         leftFront.setDirection(DcMotor.Direction.FORWARD);
@@ -167,7 +171,71 @@ public abstract class SquareRootsAutonomousBase extends LinearOpMode {
         if (_hitGoldBlock)
             //If it already hit the gold block, the program won't do a single other thing.
             return;
+        if(_readyToHit)
+            DoTheHit();
 
+        Recognition rec = vuforia.getGoldRecognition();
+        if (rec != null) {
+            if (rec.getWidth() > 120) {
+                // check angle
+                if(vuforia.getGold() < 11)
+                {
+                    double scale = 0.1;
+                    turn(scale);
+                    telemetry.addData("Turning", scale);
+                }
+                else
+                {
+                    double pow = 0.0;
+                    leftRear.setPower(pow);
+                    rightRear.setPower(pow);
+                    leftFront.setPower(pow);
+                    rightFront.setPower(pow);
+                    telemetry.addData("Done", null);
+                    _readyToHit = true;
+                }
+            } else if (rec.getWidth() < 120) {
+                if(Math.abs(vuforia.getGold()) > 5)
+                {
+                    double scale = 0.1*-Math.signum(vuforia.getGold());
+                    turn(scale);
+                    telemetry.addData("Straightening", scale);
+                }
+                else {
+                    double pow = 0.3;
+                    leftRear.setPower(pow);
+                    rightRear.setPower(pow);
+                    leftFront.setPower(pow);
+                    rightFront.setPower(pow);
+                    telemetry.addData("Approaching", rec.getWidth());
+                }
+            }
+            else
+            {
+                telemetry.addData("We have entered the twilight zone", rec.getWidth());
+            }
+            telemetry.update();
+        }
+        else
+        {
+            if((System.currentTimeMillis() - time) > 2000) {
+                double pow = -.2;
+                leftRear.setPower(pow);
+                rightRear.setPower(pow);
+                leftFront.setPower(pow);
+                rightFront.setPower(pow);
+                sleep(500);
+            }
+            telemetry.addData("I don't see ", "it");
+            double pow = 0.0;
+            leftRear.setPower(pow);
+            rightRear.setPower(pow);
+            leftFront.setPower(pow);
+            rightFront.setPower(pow);
+            telemetry.update();
+        }
+    }
+    private void DoTheHit(){
         sigs = pixy.Run();
         //pixy.run updates the signatures.
         int viewCenter = 160;
@@ -176,7 +244,7 @@ public abstract class SquareRootsAutonomousBase extends LinearOpMode {
         // How many pixels in total there are along the y-axis.
         PixySignature yellowSig = sigs.get(0);
         //Yellow signature was set to 0, so we called 0.
-        int diffY = yellowSig.y - viewHeight / 2;
+        int diffY = Math.round(yellowSig.y - viewHeight / 2);
         //Explained inside the while loops.
 
         while (yellowSig.width < TARGET_WIDTH) {
@@ -196,16 +264,11 @@ public abstract class SquareRootsAutonomousBase extends LinearOpMode {
                 //Do the exact same stuff as the previous loop.
                 yellowSig = sigs.get(0);
                 diffY = yellowSig.y - viewHeight / 2;
-                double turnScale = 1.0 * diffY / (viewHeight / 2);
-                if (turnScale > .75) {
-
-                }
+                double turnScale =1.0 * diffY / (viewHeight / 2);
                 turn(turnScale);
                 telemetry.addData("Size: " + sigs.get(0).width + ", " + sigs.get(0).height, null);
                 telemetry.update();
             }
-            double theta = vuforia.getGoldAngle(AngleUnit.RADIANS);
-            double distanceToGold = (4.75 / Math.tan(theta)) - 6;
             // based on distance, determine how far to move. Either 50 "ticks" or the distance, according
             // to our "distanceToGold" value, whichever is smaller
             RunMotorsToPosition(50, 0.5);
@@ -216,21 +279,28 @@ public abstract class SquareRootsAutonomousBase extends LinearOpMode {
         _hitGoldBlock = true;
     }
 
-    boolean findTheGold() throws InterruptedException {
+    boolean findTheGold() {
         if (goldfound) {
-            //If the gold is already in the pixy's FOV, this will return true.
+            return true;
+        }
+        double turnspeed = 0.3;
+        int waitLength = 1000;
+        double angle = vuforia.getGold();
+        if (Math.abs(angle) < 20) {
+            telemetry.addData("goldFound", "true");
+            telemetry.update();
+            goldfound = true;
+            leftFront.setPower(0);
+            leftRear.setPower(0);
+            rightRear.setPower(0);
+            rightFront.setPower(0);
             return true;
         }
         long t = System.currentTimeMillis();
-        long end = t + 2000;
-        //Gives a certain amount of time to run the while loop.
-        //We decided on 2 seconds, but we can change that later.
+        long end = t + waitLength;
         while (System.currentTimeMillis() < end) {
-            sigs = pixy.Run();
-            //Updates the pixycam
-            if (sigs.get(0).width > 60) {
-                // If there are more than 60 pixels of gold, it'll know that it's the mineral we're after,
-                // and not one inside the crater or something off in the distance.
+            angle = vuforia.getGold();
+            if (Math.abs(angle) < 20) {
                 telemetry.addData("goldFound", "true");
                 telemetry.update();
                 goldfound = true;
@@ -238,22 +308,19 @@ public abstract class SquareRootsAutonomousBase extends LinearOpMode {
                 leftRear.setPower(0);
                 rightRear.setPower(0);
                 rightFront.setPower(0);
-                //This stops the robot, so it won't drive in circles, and returns true, breaking the loop.
                 return true;
             }
-            //Turn the robot right.
-            leftFront.setPower(.5);
-            rightFront.setPower(-.5);
-            leftRear.setPower(.5);
-            rightRear.setPower(-.5);
+            leftFront.setPower(turnspeed);
+            rightFront.setPower(-turnspeed);
+            leftRear.setPower(turnspeed);
+            rightRear.setPower(-turnspeed);
         }
-        end = System.currentTimeMillis() + 2000;
-        //Reset the timer.
+        waitLength += 2000;
+        end = System.currentTimeMillis() + waitLength;
         while (System.currentTimeMillis() < end) {
-            //Do the exact same stuff as the previous while loop, except it turns the opposite way.
-            sigs = pixy.Run();
-            if (sigs.get(0).width > 60) {
-                telemetry.addData("Found gold block.", null);
+            angle = vuforia.getGold();
+            if (Math.abs(angle) < 20) {
+                telemetry.addData("goldFound", "true");
                 telemetry.update();
                 goldfound = true;
                 leftFront.setPower(0);
@@ -262,13 +329,13 @@ public abstract class SquareRootsAutonomousBase extends LinearOpMode {
                 rightFront.setPower(0);
                 return true;
             }
-            leftFront.setPower(-.5);
-            rightFront.setPower(.5);
-            leftRear.setPower(-.5);
-            rightRear.setPower(.5);
+            leftFront.setPower(-turnspeed);
+            rightFront.setPower(turnspeed);
+            leftRear.setPower(-turnspeed);
+            rightRear.setPower(turnspeed);
         }
-        //If neither scan found the gold, we assume that we just aren't close enough and drive forward 90 degrees (72 ticks)
-        RunMotorsToPosition(72, .5);
+        telemetry.addData("goldFound", "false");
+        telemetry.update();
         return false;
 
     }

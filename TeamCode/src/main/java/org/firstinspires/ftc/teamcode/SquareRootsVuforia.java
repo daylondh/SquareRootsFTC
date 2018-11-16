@@ -172,15 +172,13 @@ public class SquareRootsVuforia {
         }
     }
 
-    protected double getGoldAngle(AngleUnit angleUnit) {
+    protected double getGold() {
         if (tfod != null) {
-            List<Recognition> updatedRecognitions = tfod.getUpdatedRecognitions();
+            List<Recognition> updatedRecognitions = tfod.getRecognitions();
             if (updatedRecognitions != null) {
                 for (Recognition recognition : updatedRecognitions) {
                     if (recognition.getLabel().equals(LABEL_GOLD_MINERAL)) {
-                        goldMineralX = (int) recognition.getLeft();
-                        double theta = recognition.estimateAngleToObject(angleUnit);
-                        return theta;
+                        return recognition.estimateAngleToObject(AngleUnit.DEGREES);
                     }
                 }
             }
@@ -207,6 +205,25 @@ public class SquareRootsVuforia {
         if (tfod != null) {
             tfod.activate();
         }
+    }
+
+    public void Shutdown() {
+        tfod.deactivate();
+
+    }
+
+    public Recognition getGoldRecognition() {
+        if (tfod != null) {
+            List<Recognition> updatedRecognitions = tfod.getRecognitions();
+            if (updatedRecognitions != null) {
+                for (Recognition recognition : updatedRecognitions) {
+                    if (recognition.getLabel().equals(LABEL_GOLD_MINERAL)) {
+                        return recognition;
+                    }
+                }
+            }
+        }
+        return null;
     }
 }
 
