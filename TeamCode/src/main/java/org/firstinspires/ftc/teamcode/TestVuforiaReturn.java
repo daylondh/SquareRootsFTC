@@ -4,6 +4,7 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
 
 
@@ -22,16 +23,10 @@ public class TestVuforiaReturn extends LinearOpMode {
         waitForStart();
         while (opModeIsActive()) {
             double[] pos = vuforia.getPos();
-            telemetry.addData("Position: " + pos[0] + ", " + pos[1] + ", " + pos[2], null);
-            Recognition rec = vuforia.getGoldRecognition();
-            if(rec != null) {
-                if(rec.getWidth() < 200)
-                    telemetry.addData("Width: " + rec.getWidth() + ", Height: "+ rec.getHeight() + ", Angle", vuforia.getGold());
-                if(rec.getWidth() > 200 && rec.getHeight() < rec.getWidth())
-                {
-                    telemetry.addData("Angle", vuforia.getGold());
-                }
-            }
+            Orientation or = vuforia.getRotation().toAngleUnit(AngleUnit.DEGREES);
+            telemetry.addData("Orientation1", or.firstAngle); // 89
+            telemetry.addData("Orientation2", or.secondAngle); // 0.3
+            telemetry.addData("Orientation3", or.thirdAngle); // -145
             telemetry.update();
         }
         vuforia.Shutdown();

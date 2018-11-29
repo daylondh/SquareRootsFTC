@@ -59,11 +59,11 @@ public class SquareRootsVuforia {
     private static final float mmFTCFieldWidth = (12 * 6) * mmPerInch;       // the width of the FTC field (from the center point to the outer panels)
     private static final float mmTargetHeight = (6) * mmPerInch;          // the height of the center of the target image above the floor
 
-    private static final VuforiaLocalizer.CameraDirection CAMERA_CHOICE = BACK;
+    private static final VuforiaLocalizer.CameraDirection CAMERA_CHOICE = FRONT;
 
     private OpenGLMatrix lastLocation = null;
     private Iterable<? extends VuforiaTrackable> allTrackables;
-    private double[] rotation = new double[] {0,0,0};
+    private Orientation rotation = new Orientation();
     private TFObjectDetector tfod;
     private static final String TFOD_MODEL_ASSET = "RoverRuckus.tflite";
     private static final String LABEL_GOLD_MINERAL = "Gold Mineral";
@@ -161,7 +161,7 @@ public class SquareRootsVuforia {
 
             // express the rotation of the robot in degrees.
             Orientation rot = Orientation.getOrientation(lastLocation, EXTRINSIC, XYZ, DEGREES);
-            rotation = new double[]{rot.firstAngle, rot.secondAngle, rot.thirdAngle};
+            rotation = rot;
 
             return new double[]{x, y, z};
         } else {
@@ -172,7 +172,7 @@ public class SquareRootsVuforia {
         }
     }
 
-    protected double getGold() {
+    protected double getGoldAngle() {
         if (tfod != null) {
             List<Recognition> updatedRecognitions = tfod.getRecognitions();
             if (updatedRecognitions != null) {
@@ -187,19 +187,18 @@ public class SquareRootsVuforia {
     }
 
 
-
-    public double[] getRotation() {
+    public Orientation getRotation() {
         return rotation;
     }
 
 
-
-
     public void InitTfod(int cameraID) {
+
         if (ClassFactory.getInstance().canCreateTFObjectDetector()) {
             TFObjectDetector.Parameters tfodParameters = new TFObjectDetector.Parameters(cameraID);
             tfod = ClassFactory.getInstance().createTFObjectDetector(tfodParameters, vuforia);
             tfod.loadModelFromAsset(TFOD_MODEL_ASSET, LABEL_GOLD_MINERAL, LABEL_SILVER_MINERAL);
+            tfodParameters.minimumConfidence = .75;
 
         }
         if (tfod != null) {
@@ -216,14 +215,26 @@ public class SquareRootsVuforia {
         if (tfod != null) {
             List<Recognition> updatedRecognitions = tfod.getRecognitions();
             if (updatedRecognitions != null) {
+                Recognition closestRecognition = null;
                 for (Recognition recognition : updatedRecognitions) {
                     if (recognition.getLabel().equals(LABEL_GOLD_MINERAL)) {
-                        return recognition;
+                        if(closestRecognition == null || recognition.getTop() > closestRecognition.getTop())
+                            closestRecognition = recognition;
                     }
                 }
+                return closestRecognition;
             }
         }
         return null;
     }
-}
 
+    public boolean seesGold(double minimumTop) { // TODO: 11/22/2018 make more exclusive.
+
+        Recognition rec = getGoldRecognition();
+        if(rec == null || rec.getTop()< minimumTop)
+            return false;
+        return true;
+    }
+
+
+}
