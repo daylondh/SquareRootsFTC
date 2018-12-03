@@ -18,6 +18,7 @@ import java.util.List;
 
 import static java.lang.Math.abs;
 import static org.firstinspires.ftc.teamcode.SquareRootsAutonomousBase.Axis.Y;
+import static org.firstinspires.ftc.teamcode.SquareRootsAutonomousBase.Axis.Z;
 
 public abstract class SquareRootsAutonomousBase extends LinearOpMode {
 
@@ -33,7 +34,7 @@ public abstract class SquareRootsAutonomousBase extends LinearOpMode {
     protected SquareRootsVuforia vuforia;
     protected PixyManager pixy;
     protected boolean _clearedLander;
-    protected Servo cameraServo;
+    protected Servo duckarm;
     protected Servo leftTooth;
     protected Servo rightTooth;
     protected Servo wrist;
@@ -43,6 +44,7 @@ public abstract class SquareRootsAutonomousBase extends LinearOpMode {
     private boolean _foundGold;
     private boolean _squaredOnGold = false;
     private boolean override;
+    private boolean _alignedOnVumark;
 
     public SquareRootsAutonomousBase(AllianceSide side) {
         this.side = side;
@@ -66,7 +68,7 @@ public abstract class SquareRootsAutonomousBase extends LinearOpMode {
         rightTooth = hardwareMap.get(Servo.class, "rightTooth");
         wrist = hardwareMap.get(Servo.class, "wrist");
         shoulder = hardwareMap.get(DcMotor.class, "shoulder");
-        cameraServo = hardwareMap.get(Servo.class, "cameraServo");
+        duckarm = hardwareMap.get(Servo.class, "duckArm");
 
         BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
         parameters.angleUnit = BNO055IMU.AngleUnit.DEGREES;
@@ -146,7 +148,7 @@ public abstract class SquareRootsAutonomousBase extends LinearOpMode {
         //Well, yeah. It clears the lander. That's about it.
         if (_clearedLander)
             return;
-        cameraServo.setPosition(2.0);
+        duckarm.setPosition(2.0);
         int targetPos = 70;
         double targetSpeed = 0.8;
         turn(-1.0);
@@ -344,14 +346,30 @@ public abstract class SquareRootsAutonomousBase extends LinearOpMode {
     }
 
     public void smackAndRun(int retreatDistance, MineralSquare d) { // TODO: 11/28/2018 MAKE TURN HAVE GREATER ANGLE FOR LINING UP.
-        int turn = 70;
+        int turn;
         rightFront.setPower(0);
         leftFront.setPower(0);
         rightRear.setPower(0);
         leftRear.setPower(0);
+        //Smacks the block and retreats.
         RunMotorsToPosition(500, .5);
         RunMotorsToPosition(retreatDistance, -1);
+        //Determines how to turn.
         if (this.side == AllianceSide.SILVER) {
+            switch (d) {
+                case THREE:
+                    turn = 45;
+                    break;
+                case TWO:
+                    turn = 55;
+                    break;
+                case ONE:
+                    turn = 65;
+                    break;
+                default:
+                    turn = 45;
+
+            }
             while (getImuAxis(Y) <= turn) {
                 turn(1);
             }
@@ -360,6 +378,20 @@ public abstract class SquareRootsAutonomousBase extends LinearOpMode {
             leftRear.setPower(0);
             rightRear.setPower(0);
         } else {
+            switch (d) {
+                case THREE:
+                    turn = 65;
+                    break;
+                case TWO:
+                    turn = 55;
+                    break;
+                case ONE:
+                    turn = 45;
+                    break;
+                default:
+                    turn = 65;
+
+            }
             while (getImuAxis(Y) > -turn) {
                 turn(-1);
             }
@@ -395,13 +427,14 @@ public abstract class SquareRootsAutonomousBase extends LinearOpMode {
         rightFront.setPower(0);
         leftRear.setPower(0);
         rightRear.setPower(0);
+        alignOnVumark();
     }
 
-    public void allignOnVumark() {
-    }
+    public void alignOnVumark() { // TODO: 11/30/2018 Make it turn according to the side.
 
-    public void goStraight(double distance, double targetSpeed, direction d) {
-
+        if (_alignedOnVumark) {
+            return;
+        }
         leftFront.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         rightFront.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         leftRear.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -412,72 +445,159 @@ public abstract class SquareRootsAutonomousBase extends LinearOpMode {
         rightRear.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
 
-        Orientation o = imu.getAngularOrientation();
-        AxesOrder axesOrder = o.axesOrder;
+        if (side == AllianceSide.GOLD) {
+            while (vuforia.getPos()[0] == 120) {
+                turn(.1);
+            }
+            leftFront.setPower(0);
+            rightFront.setPower(0);
+            leftRear.setPower(0);
+            rightRear.setPower(0);
+        } else {
+            while (vuforia.getPos()[0] == 120) {
+                turn(-.1);
+            }
+            leftFront.setPower(0);
+            rightFront.setPower(0);
+            leftRear.setPower(0);
+            rightRear.setPower(0);
+        }
+        // we know where we are. orient
+        double tAngle = 165;
+        if (vuforia.getPos()[1] < 0) {
+            tAngle = -15;
+        }
+        double dTheta = tAngle - vuforia.getRotation().thirdAngle;
+        double imuTargetAngle = getImuAxis(Z) + dTheta;
+        double[] pos = vuforia.getPos();
+        double currX = pos[0];
+        double currY = pos[1];
+        // now turn left until our current angle is >= target angle
+        while (getImuAxis((Z)) < imuTargetAngle) {
+            turn(0.3);
+            telemetry.addData("IMU Z", getImuAxis(Z));
+            telemetry.addData("Target", imuTargetAngle);
+            telemetry.update();
+        }
+        leftFront.setPower(0);
+        rightFront.setPower(0);
+        leftRear.setPower(0);
+        rightRear.setPower(0);
+        throwSirQuacksalot(currX, currY);
+        _alignedOnVumark = true;
+    }
+
+    public void throwSirQuacksalot(double currX, double currY) {
+        double speed = -1.0;
+        double yDist = 55 - currY;
+        if (currY < 0) {
+            yDist = Math.abs(-55 - currY);
+        }
+        double xDist = Math.abs(-40 - currX);
+        if (currY < 0) {
+            xDist = 40 - currX;
+        }
+        //For some reason, currY was adding another 12 inches.
+        if (currX > 0 && currY < 0) {
+            yDist += 12;
+        } else if (currX < 0 && currY > 0) {
+            yDist += 12;
+        } else {
+            yDist -= 3;
+        }
+        // assume we strafe at 12 inches per second
+        double t = System.currentTimeMillis();
+        int time = (int) ((yDist / 12) * 1000);
+    /*    while(true)
+        {
+            telemetry.addData("xVal", currX);
+            telemetry.addData("yVal", currY);
+            telemetry.addData("xDist", xDist);
+            telemetry.addData("yDist", yDist);
+            telemetry.addData("Time", time);
+            telemetry.update();
+            }
+         */
+        while (t + time > System.currentTimeMillis()) {
+            telemetry.addData("yDist", yDist);
+            telemetry.addData("xDist", xDist);
+            telemetry.addData("Time", time);
+            telemetry.update();
+            leftFront.setPower(-speed);
+            leftRear.setPower(speed);
+            rightFront.setPower(speed);
+            rightRear.setPower(-speed);
+        }
+        leftFront.setPower(0);
+        rightFront.setPower(0);
+        leftRear.setPower(0);
+        rightRear.setPower(0);
+        double rotationsNeeded = xDist / (4 * Math.PI);
+        int ticks = (int) (rotationsNeeded * 288);
+        telemetry.addData("yDist", yDist);
+        telemetry.addData("Rotations", rotationsNeeded);
+        telemetry.addData("Ticks", ticks);
+        telemetry.update();
+        rightRear.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        leftRear.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        rightFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        leftFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
+        RunMotorsToPosition(ticks, 1);
+        duckarm.setPosition(2);
+    }
+
+    public void goStraight(double distance, double targetSpeed, int line) {
+
+        leftFront.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        rightFront.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        leftRear.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        rightRear.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        leftFront.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        rightFront.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        leftRear.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        rightRear.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
         double lfpeed = targetSpeed;
         double rfspeed = targetSpeed;
         double lrspeed = targetSpeed;
         double rrspeed = targetSpeed;
-        double x;
-        double z;
-        double y;
+        boolean isTurning = false;
 
-        switch (axesOrder) {
-            // We're not going to be using the Z or Y axis. If the robot is rotating along the Z or Y axis, we have a problem....
-            case XYZ:
-                x = o.firstAngle;
-                z = o.secondAngle;
-                y = o.thirdAngle;
-                break;
-
-            case XZY:
-                x = o.firstAngle;
-                z = o.thirdAngle;
-                y = o.secondAngle;
-                break;
-
-            case YXZ:
-                x = o.secondAngle;
-                z = o.firstAngle;
-                y = o.thirdAngle;
-                break;
-
-            case ZXY:
-                x = o.secondAngle;
-                z = o.thirdAngle;
-                y = o.firstAngle;
-                break;
-
-            case YZX:
-                x = o.thirdAngle;
-                z = o.firstAngle;
-                y = o.secondAngle;
-                break;
-
-            case ZYX:
-                x = o.thirdAngle;
-                z = o.secondAngle;
-                y = o.firstAngle;
-                break;
-
-            default:
-                x = o.firstAngle;
-                z = o.secondAngle;
-                y = o.thirdAngle;
-                break;
-        }
         while (leftFront.getCurrentPosition() < distance || rightFront.getCurrentPosition() < distance
                 || leftRear.getCurrentPosition() < distance || rightRear.getCurrentPosition() < distance) {
             //This loop continuously tests to see if the individual motors have reached the target position.
             sleep(10);
 
-            if (y > 2) {
+            double z = getImuAxis(Z);
+
+
+            if (z > line + 1 && !isTurning) {
                 // Turn right.
-                lfpeed -= .1;
+                lrspeed -= .5;
+                lfpeed -= .5;
+                telemetry.addData("Turing", "Right");
+                telemetry.update();
+                isTurning = true;
             }
-            if (y < -2) {
-                //Turn left.
+            if (z < line - 1 && !isTurning) {
+
+                rrspeed -= .5;
+                rfspeed -= .5;
+                telemetry.addData("Turing", "Left");
+                telemetry.update();
+                isTurning = true;
             }
+            if (z > line - 1 && z < line + 1) {
+                lfpeed = targetSpeed;
+                rfspeed = targetSpeed;
+                lrspeed = targetSpeed;
+                rrspeed = targetSpeed;
+                isTurning = false;
+                telemetry.addData("Just", "Truckin' along");
+                telemetry.update();
+            }
+
             leftFront.setPower(lfpeed);
             rightFront.setPower(rfspeed);
             leftRear.setPower(lrspeed);
@@ -496,9 +616,6 @@ public abstract class SquareRootsAutonomousBase extends LinearOpMode {
         rightFront.setPower(0);
         leftRear.setPower(0);
         rightRear.setPower(0);
-        telemetry.addData("X", x);
-        telemetry.addData("Y", y);
-        telemetry.addData("Z", z);
         telemetry.update();
     }
 
@@ -531,20 +648,20 @@ public abstract class SquareRootsAutonomousBase extends LinearOpMode {
 
             case ZXY:
                 x = o.secondAngle;
-                z = o.thirdAngle;
-                y = o.firstAngle;
+                z = o.firstAngle;
+                y = o.thirdAngle;
                 break;
 
             case YZX:
                 x = o.thirdAngle;
-                z = o.firstAngle;
-                y = o.secondAngle;
+                z = o.secondAngle;
+                y = o.firstAngle;
                 break;
 
             case ZYX:
                 x = o.thirdAngle;
-                z = o.secondAngle;
-                y = o.firstAngle;
+                z = o.firstAngle;
+                y = o.secondAngle;
                 break;
 
             default:

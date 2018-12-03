@@ -23,10 +23,14 @@ public class TestVuforiaReturn extends LinearOpMode {
         waitForStart();
         while (opModeIsActive()) {
             double[] pos = vuforia.getPos();
+            double pos1 = pos[1];
             Orientation or = vuforia.getRotation().toAngleUnit(AngleUnit.DEGREES);
             telemetry.addData("Orientation1", or.firstAngle); // 89
             telemetry.addData("Orientation2", or.secondAngle); // 0.3
             telemetry.addData("Orientation3", or.thirdAngle); // -145
+            telemetry.addData("Pos 1", pos1);
+            double sign = Math.signum(pos[1]);
+            telemetry.addData("iosdgh", sign);
             telemetry.update();
         }
         vuforia.Shutdown();

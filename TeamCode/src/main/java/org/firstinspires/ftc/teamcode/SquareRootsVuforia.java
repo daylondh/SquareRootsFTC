@@ -228,13 +228,11 @@ public class SquareRootsVuforia {
         return null;
     }
 
-    public boolean seesGold(double minimumTop) { // TODO: 11/22/2018 make more exclusive.
+    public boolean seesGold(double minimumTop) {
 
         Recognition rec = getGoldRecognition();
         if(rec == null || rec.getTop()< minimumTop)
             return false;
         return true;
     }
-
-
 }

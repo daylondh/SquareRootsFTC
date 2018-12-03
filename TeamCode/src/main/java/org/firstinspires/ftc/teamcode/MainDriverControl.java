@@ -101,8 +101,8 @@ public class MainDriverControl extends LinearOpMode {
         double leftRearPower = 0;
 
 
-        double drive = gamepad1.left_stick_y;
-        double strafe = gamepad1.left_stick_x;
+        double drive = -gamepad1.left_stick_y;
+        double strafe = -gamepad1.left_stick_x;
         double turn = gamepad1.right_stick_x;
         //determine if we should turn. Turn has priority over strafe.
         if (turn != 0) {
@@ -185,6 +185,13 @@ public class MainDriverControl extends LinearOpMode {
             shoulder.setPower(Range.clip(gamepad2.left_stick_y, -1, 1));
             //Sets the power accordingly to the left stick.
         }
+        if (gamepad2.left_stick_y == 0) {
+            shoulder.setPower(0);
+            //Sets the power accordingly to the left stick.
+        }
+        if(gamepad2.a) {
+            shoulder.setTargetPosition(40);
+        }
     }
 
     private void instantiateActuators() {
@@ -198,10 +205,9 @@ public class MainDriverControl extends LinearOpMode {
         leftRear = hardwareMap.get(DcMotor.class, "leftRear");
         rightRear = hardwareMap.get(DcMotor.class, "rightRear");
         lift = hardwareMap.get(DcMotor.class, "lift");
-        cameraServo = hardwareMap.get(Servo.class, "cameraServo");
+        cameraServo = hardwareMap.get(Servo.class, "duckarm");
         leftTooth = hardwareMap.get(Servo.class, "leftTooth");
         rightTooth = hardwareMap.get(Servo.class, "rightTooth");
-        wrist = hardwareMap.get(Servo.class, "wrist");
 
         leftFront.setDirection(DcMotor.Direction.FORWARD);
         rightFront.setDirection(DcMotor.Direction.REVERSE);
@@ -217,6 +223,8 @@ public class MainDriverControl extends LinearOpMode {
         rightRear.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         lift.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         lift.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        shoulder.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        shoulder.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
     }
 

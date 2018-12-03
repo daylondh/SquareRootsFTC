@@ -3,11 +3,10 @@ package org.firstinspires.ftc.teamcode;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 
 @Autonomous
-
-public class SquareRootsAutonomousGold extends SquareRootsAutonomousBase {
+public class SquareRootsAutonomousSilver extends SquareRootsAutonomousBase {
     //Tell superclass that we are gold.
-    public SquareRootsAutonomousGold() {
-        super(AllianceSide.GOLD);
+    public SquareRootsAutonomousSilver() {
+        super(SquareRootsAutonomousBase.AllianceSide.SILVER);
     }
 
     @Override
@@ -17,9 +16,8 @@ public class SquareRootsAutonomousGold extends SquareRootsAutonomousBase {
         while (opModeIsActive()) {
             //DoLanding();
             //ClearLander();
-          //  strafeToGetGold();
-            //strafeSquareUp();
-            alignOnVumark();
+            strafeToGetGold();
+            strafeSquareUp();
 
         }
     }
