@@ -7,7 +7,7 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 public class SquareRootsAutonomousGold extends SquareRootsAutonomousBase {
     //Tell superclass that we are gold.
     public SquareRootsAutonomousGold() {
-        super(AllianceSide.GOLD);
+        super(LanderSide.GOLD);
     }
 
     @Override
@@ -15,12 +15,14 @@ public class SquareRootsAutonomousGold extends SquareRootsAutonomousBase {
         Init();
         waitForStart();
         while (opModeIsActive()) {
-            //DoLanding();
-            //ClearLander();
-          //  strafeToGetGold();
-            //strafeSquareUp();
-            alignOnVumark();
-
+            DoLanding();
+            ClearLander();
+            strafeToGetGold();
+            strafeSquareUp();
         }
+        rightFront.setPower(0);
+        leftFront.setPower(0);
+        rightRear.setPower(0);
+        leftRear.setPower(0);
     }
 }

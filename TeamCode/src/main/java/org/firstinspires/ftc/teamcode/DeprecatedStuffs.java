@@ -7,6 +7,8 @@ import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
+import org.firstinspires.ftc.teamcode.PixyStuff.PixyManager;
+import org.firstinspires.ftc.teamcode.PixyStuff.PixySignature;
 
 import java.util.List;
 

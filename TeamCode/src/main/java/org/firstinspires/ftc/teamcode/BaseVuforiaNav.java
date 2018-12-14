@@ -92,7 +92,7 @@ import static org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocaliz
  */
 
 @TeleOp
-
+@Disabled
 public class BaseVuforiaNav extends LinearOpMode {
 
     /*

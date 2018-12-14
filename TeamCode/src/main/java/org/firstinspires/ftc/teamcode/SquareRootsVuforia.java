@@ -235,4 +235,9 @@ public class SquareRootsVuforia {
             return false;
         return true;
     }
+    public boolean seesGoldLeft(double minimumLeft, double minimumTop) {
+        Recognition rec = getGoldRecognition();
+        if(rec == null || rec.getLeft()< minimumLeft ||rec.getTop()< minimumTop)
+            return false;
+        return true;}
 }
