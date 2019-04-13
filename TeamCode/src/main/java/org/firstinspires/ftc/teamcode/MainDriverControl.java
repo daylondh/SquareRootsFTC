@@ -164,6 +164,12 @@ public class MainDriverControl extends LinearOpMode {
         } else {
             lift.setPower(0);
         }
+        if (gamepad2.x){
+            duckServo.setPosition(1);
+            }
+        if (gamepad2.y) {
+            duckServo.setPosition(0);
+        }
     }
 
     private void instantiateActuators() {

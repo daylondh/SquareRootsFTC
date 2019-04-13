@@ -125,7 +125,7 @@ public abstract class SquareRootsAutonomousBase extends LinearOpMode {
         rightRear.setPower(rightFrontPower);
         leftFront.setPower(leftRearPower);
         rightFront.setPower(rightRearPower);
-        sleep(900);
+        sleep(1000);
         leftRear.setPower(0);
         rightRear.setPower(0);
         leftFront.setPower(0);
@@ -218,7 +218,7 @@ public abstract class SquareRootsAutonomousBase extends LinearOpMode {
             //telemetry.addData("TensorFlow Data: ", vuforia.getGoldRecognition());
             //telemetry.update();
             // Wait 8 seconds, if it hasn't seen the gold, it gives up.
-            if (System.currentTimeMillis() - 7000 > time) {
+            if (System.currentTimeMillis() - 6600 > time) {
                 //telemetry.addData("Giving up", null);
                 //telemetry.update();
                 override = true;
@@ -576,5 +576,6 @@ public abstract class SquareRootsAutonomousBase extends LinearOpMode {
         TWO,
         ONE
     }
+
 }
 
